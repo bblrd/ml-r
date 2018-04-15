@@ -1,4 +1,4 @@
-# R-ML-Scripts
+# R-MachineLearning-Scripts
 Machine Learning scripts in R
 
 files included:
