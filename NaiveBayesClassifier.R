@@ -2,7 +2,6 @@
 
 # Brad Ballard
 # CS498 Applied Machine Learning at UIUC
-# HW 1 problem 1 part A,B,C, and D
 
 #######################################
 
