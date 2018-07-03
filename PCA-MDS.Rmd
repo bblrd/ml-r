@@ -1,0 +1,230 @@
+---
+title: "CS498 Applied Machine Learning - Homework 3"
+author: "Brad Ballard (bjb3), Jacob Rettig (jrettig2), Stanley Lee (skl3)"
+date: "February 26, 2018"
+output:
+  pdf_document:
+    keep_tex: yes
+    latex_engine: xelatex
+    number_sections: yes
+    toc: yes
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+options(width=80)
+opts_chunk$set(comment = "", warning = FALSE, message = FALSE, echo = TRUE,
+               tidy = TRUE, size="small", root.dir = '~/cs498/Homework 3')
+```
+
+# Homework 3
+## Load libraries
+Load all the R libraries used for this homework assignment.
+
+```{r Load libraries, results="hide"}
+library(imager)
+library(caret)
+library(grid)
+library(base)
+library(factoextra)
+library(FactoMineR)
+```
+
+## Downloading CIFAR-10
+The CIFAR 10 is a labeled subset of the 80 million tiny image dataset. The CIFAR 10 dataset consists of 60000 32X32 colour images in 10 classes, with 6000 images per class. There are 50000 training images and 10000 test images. The dataset is divided into five training batches and one test batch, each with 10000 images. The test batch contains exactly 1000 randomly selected images from each class. The training batches contain the remaining images in random order, but some training batches more contain more images from one class than another. Between them, the training batches contain exactly 5000 images from each class. 
+
+```
+# download binary CIFAR-10 files
+if (!file.exists("cifar-10-binary.tar.gz")) {
+  download.file("http://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz",
+                "cifar-10-binary.tar.gz", method="auto")
+  }
+
+# extract binary CIFAR-10 files
+untar("cifar-10-binary.tar.gz")
+```
+
+### Importing CIFAR-10 into CSV file
+We leveraged code from [R Deep Learning Cookbook - Chapter 3](https://github.com/PacktPublishing/R-Deep-Learning-Cookbook/blob/master/Chapter%203/Chapter%203%20Packt.R) in order to properly load the training and test data. The code is outlined below.
+
+```
+labels <- read.table("cifar-10-batches-bin/batches.meta.txt")
+num.images = 10000
+filenames = c("data_batch_1.bin","data_batch_2.bin", "data_batch_3.bin",
+              "data_batch_4.bin","data_batch_5.bin", "test_batch.bin")
+write.table(t(c(1:3072,"y")), file = "cifar-10.csv", append = F,
+            row.names = F, col.names = F, sep = ",")
+
+# Function to read cifar data
+read.cifar.data <- function(filenames,num.images=10000){
+  for (f in 1:length(filenames)) {
+    to.read <- file(paste("cifar-10-batches-bin/",filenames[f], sep=""), "rb")
+    for(i in 1:num.images) {
+      l <- readBin(to.read, integer(), size=1, n=1, endian="big")
+      rgb <- as.integer(readBin(to.read, raw(), size=1, n=3072, endian="big"))
+      write.table(t(c(rgb, l+1)), file = "cifar-10.csv", append = T,
+                  row.names = F, col.names = F, sep = ",")
+    }
+    close(to.read)
+    cat("completed :",  filenames[f], "\n")
+    remove(l,rgb,f,i,index, to.read)
+  }
+}
+
+# Training and Test database combined
+read.cifar.data(filenames)
+```
+
+## Import CIFAR-10 CSV into data frame
+The code below loads the training and test data into a data frame that we will be able to manipulate for PCA. 
+
+```{r}
+# read cifar-10.csv file
+cifar.df = read.csv("cifar-10.csv")
+```
+
+## View sample image
+Below is the code we used in order to inspect a sample image. We used this as a verification that we properly loaded the training and test data. A portion of this code has been modified from the [Piazza answer by Eric Huber](https://piazza.com/class/jchzguhsowz6n9?cid=436).
+
+```{r}
+# function to run sanity check on photos & labels import
+disp_img <- function(img) {
+  # hint from Ryan Yusko
+  # and "baptiste" on StackOverflow https://stackoverflow.com/a/11306342
+  
+  plot(c(0, 32), c(0, 32), type = "n", xlab = "", ylab = "", asp = 1)
+  r <- img[1:1024]
+  g <- img[1025:2048]
+  b <- img[2049:3072]
+  img_matrix = rgb(r,g,b,maxColorValue=255)
+  dim(img_matrix) = c(32,32)
+  img_matrix = t(img_matrix) # fix to fill by columns
+  image <- as.raster(img_matrix)
+  rasterImage(image, 0, 0, 32, 32, interpolate = FALSE)
+}
+
+# Draw a random image along with its label and description from image dataset
+disp_img(cifar.df[1,1:3072])
+```
+
+## Get mean image
+For Part 1, we began by first calculating the mean image. 
+```{r}
+categories.df <- list()
+categories.mean <- data.frame(matrix(ncol = 3072, nrow = 10))
+for (i in 1:10) {
+  categories.df[[i]] <- cifar.df[cifar.df$y==i,1:3072]
+  categories.mean[i,] = colMeans(categories.df[[i]])
+}
+```
+
+
+## PCA
+For Part 1, we continued to calculate the first 20 Principal Components. In order to properly calculate the 20 principal components we leverage the following resources below. We used the resources to develop a deeper understanding of how to implement PCA in R as well as code to help move us in the right direction. We altered the code by creating a loop to run through the ten different categories. 
+[Computing and Visualizing PCA in R](https://www.r-bloggers.com/computing-and-visualizing-pca-in-r/)
+[Principal Component Analysis in R prcomp vss princomp](http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/118-principal-component-analysis-in-r-prcomp-vs-princomp/)
+[PCA in R](http://www.gastonsanchez.com/visually-enforced/how-to/2012/06/17/PCA-in-R/)
+
+```{r}
+# apply PCA
+start_time <- Sys.time()
+categories.pca <- list()
+
+for (i in 1:10) {
+  categories.pca[[i]] <- prcomp(categories.df[[i]])
+}
+end_time <- Sys.time()
+end_time - start_time
+
+start_time <- Sys.time()
+categories.svd <- list()
+
+# plot method
+# fviz_eig(categories.pca[[1]], ncp = 20)
+```
+
+## Errors
+In order to calculate error, we first calculated the eigenvalues by leveraging the code below. We altered the code to run in a loop in order to calculate the errors (eigenvalues) for all ten categories. 
+[Calculating Eigenvalues](https://stat.ethz.ch/pipermail/r-help/2005-August/076610.html)
+```{r}
+categories.error <- c()
+for (i in 1:10) {
+  categories.error[i] <- sum(categories.pca[[i]]$sdev[-c(1:20)] * 
+                               categories.pca[[i]]$sdev[-c(1:20)])
+}
+```
+
+## Plot
+Below are the errors for each of the 10 classes plotted. The errors range from a little more than 2 million to roughly 4 million. 
+```{r}
+ggplot(
+  data.frame(categories.error),
+  aes(seq_along(categories.error),categories.error)) + 
+  geom_bar(stat="identity")
+```
+
+## Part 2 - MDS
+For Part 2, we were asked to calculate the MDS on the mean images. Per Eric Huber's post, we created the distance matrix by using the 'dist' function to calculate the euclidean distances between the pairwise distances. We then labeled the categories correspondingly below. 
+```{r}
+distance.matrix <- dist(categories.mean, method= "euclidean", diag = TRUE)
+categories.mds <- as.data.frame(cmdscale(distance.matrix))
+colnames(categories.mds) <- c("x", "y")
+rownames(categories.mds) <- c("airplane", "automobile", "bird", "cat", "deer",
+                              "dog", "frog", "horse", "ship", "truck")
+```
+
+## Scatter plot ggplot2
+Below is the output of our distance matrix that we calculated above. 
+```{r}
+print(distance.matrix)
+
+ggplot(categories.mds, aes(x=x, y=y)) + geom_point() + 
+  geom_label(label=rownames(categories.mds), nudge_x = 0.25, nudge_y = 0.2)
+```
+
+## Part 3
+## Reconstruction verify calculations
+For Part 3, we were tasked with comparing the values between A and B by applyng B's principal components to A's image. The bulk of the work associated with Part 3 surrounded the image reconstruction, for which, we referred to the following links below as well as Eric Huber's post on Piazza. Per the completion of Part 3, we calculated an error of XXX and plotted the results below. The results were fairly different for the plot as a whole; however, some variables are relatively closely aligned. For example, bird, dog, and horse are close to their position in A.  
+[SO Reverse PCA](https://stackoverflow.com/questions/29783790/how-to-reverse-pca-in-prcomp-to-get-original-data)
+[Reverse PCA](https://stats.stackexchange.com/questions/229092/how-to-reverse-pca-and-reconstruct-original-variables-from-several-principal-com)
+[Stats](https://stats.stackexchange.com/questions/57467/how-to-perform-dimensionality-reduction-with-pca-in-r/57478#57478)
+```{r}
+categories.mean.matrix <- matrix(nrow = 10, ncol = 10)
+pc.use <- 20 # use only the first 20 principal components
+for (i in 1:10) {
+  for (j in 1:10) {
+    class1.mean.matrix <- categories.mean[rep(i,each = nrow(categories.df[[i]])),]
+    class1.x = categories.df[[i]] - class1.mean.matrix
+    class1.z = as.matrix(class1.x) %*% categories.pca[[j]]$rotation
+
+    class2.mean.matrix <- categories.mean[rep(j,each = nrow(categories.df[[j]])),]
+    class2.x = categories.df[[j]] - class2.mean.matrix
+    class2.z = as.matrix(class2.x) %*% categories.pca[[i]]$rotation
+
+    categories.low.dim1 <- scale(class1.z[,1:pc.use] %*% 
+                                   t(categories.pca[[j]]$rotation[,1:pc.use]),
+                                 center = -1 * categories.pca[[i]]$center, scale=FALSE)
+    
+    categories.low.dim2 <- scale(class2.z[,1:pc.use] %*% 
+                                   t(categories.pca[[i]]$rotation[,1:pc.use]),
+                                 center = -1 * categories.pca[[j]]$center, scale=FALSE)
+    
+    categories.mean.matrix[i, j] = (mean(rowSums((categories.df[[i]] - 
+                                                    categories.low.dim1)^2)) + 
+                                    mean(rowSums((categories.df[[j]] - 
+                                                    categories.low.dim2)^2)))/2
+  }
+}
+
+print(categories.mean.matrix)
+
+categories.similarities <- as.data.frame(cmdscale(categories.mean.matrix))
+colnames(categories.similarities) <- c("x", "y")
+rownames(categories.similarities) <- c("airplane", "automobile", "bird", "cat", 
+                                       "deer", "dog", "frog", "horse", "ship", "truck")
+ggplot(categories.similarities, aes(x=x, y=y)) + geom_point() + 
+  geom_label(label=rownames(categories.similarities), nudge_x = 0.25, nudge_y = 0.2)
+```
+
+
