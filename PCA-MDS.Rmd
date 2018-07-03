@@ -1,6 +1,6 @@
 ---
-title: "CS498 Applied Machine Learning - Homework 3"
-author: "Brad Ballard (bjb3), Jacob Rettig (jrettig2), Stanley Lee (skl3)"
+title: "PCA and MDS"
+author: "Brad Ballard"
 date: "February 26, 2018"
 output:
   pdf_document:
@@ -18,7 +18,6 @@ opts_chunk$set(comment = "", warning = FALSE, message = FALSE, echo = TRUE,
                tidy = TRUE, size="small", root.dir = '~/cs498/Homework 3')
 ```
 
-# Homework 3
 ## Load libraries
 Load all the R libraries used for this homework assignment.
 
