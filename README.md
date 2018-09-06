@@ -1,6 +1,6 @@
 # Machine Learning in R
 
-sample files:
+
 
 IRISrandomForests.r ................. Random Forest classification for iris dataset
 
