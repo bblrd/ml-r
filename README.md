@@ -1,8 +1,9 @@
-# R-MachineLearning-Scripts
-Machine Learning scripts in R
+# Machine Learning in R
 
-files included:
+sample files:
 
 IRISrandomForests.r ................. Random Forest classification for iris dataset
 
 NaiveBayesClassifier.r .............. Comparison of Navie Bayes classification packages
+
+PCA-MDS.Rmd ........................ Computer vision using PCA and MDS
