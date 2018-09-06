@@ -2,7 +2,7 @@
 
 
 
-IRISrandomForests.r ................. [Random Forest classification for iris dataset](IRISrandomForests.r)
+[IRISrandomForests.r](IRISrandomForests.r) ................. Random Forest classification for iris dataset
 
 NaiveBayesClassifier.r .............. Comparison of Navie Bayes classification packages
 
