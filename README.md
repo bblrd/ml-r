@@ -2,8 +2,8 @@
 
 
 
-[IRISrandomForests.r](IRISrandomForests.r) ................. Random Forest classification for iris dataset
+[IRISrandomForests.r](IRISrandomForests.r) ... Random Forest classification for iris dataset
 
-[NaiveBayesClassifier.r](NaiveBayesClassifier.r) .............. Comparison of Navie Bayes classification packages
+[NaiveBayesClassifier.r](NaiveBayesClassifier.r) ... Comparison of Navie Bayes classification packages
 
-[PCA-MDS.Rmd](PCA-MDS.Rmd) ........................ Computer vision using PCA and MDS
+[PCA-MDS.Rmd](PCA-MDS.Rmd) ... Computer vision using PCA and MDS
